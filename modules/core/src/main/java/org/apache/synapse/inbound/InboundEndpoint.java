@@ -119,6 +119,12 @@ public class InboundEndpoint implements ManagedLifecycle {
         return inboundProcessorParams;
     }
 
+    public void close() {
+        log.info("Closing Inbound Endpoint: " + getName());
+        if (inboundRequestProcessor != null) {
+            inboundRequestProcessor.close();
+        }
+    }
     public void destroy() {
         log.info("Destroying Inbound Endpoint: " + getName());
         if (inboundRequestProcessor != null) {

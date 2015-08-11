@@ -2115,9 +2115,7 @@ public class SynapseConfiguration implements ManagedLifecycle, SynapseArtifact {
     private void destroyExistingInbounds(SynapseConfiguration synapseConfiguration) {
         Collection<InboundEndpoint> inboundEndpoints = synapseConfiguration.getInboundEndpoints();
         for (InboundEndpoint inboundEndpoint : inboundEndpoints) {
-            if (!InboundEndpointConstants.CXF_WS_RM.equals(inboundEndpoint.getProtocol())) {
-                inboundEndpoint.destroy();
-            }
+            inboundEndpoint.close();
         }
     }
 
