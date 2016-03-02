@@ -22,11 +22,13 @@ package org.apache.synapse.config.xml.endpoints;
 import org.apache.axiom.om.OMAttribute;
 import org.apache.axiom.om.OMElement;
 import org.apache.axiom.om.OMNode;
-import org.apache.axiom.util.UIDGenerator;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.SynapseConstants;
 import org.apache.synapse.SynapseException;
+import org.apache.synapse.aspects.AspectConfiguration;
+import org.apache.synapse.aspects.ComponentType;
+import org.apache.synapse.aspects.flow.statistics.StatisticIdentityGenerator;
 import org.apache.synapse.config.XMLToObjectMapper;
 import org.apache.synapse.config.xml.XMLConfigConstants;
 import org.apache.synapse.config.xml.MediatorPropertyFactory;
@@ -139,8 +141,16 @@ public abstract class EndpointFactory implements XMLToObjectMapper {
      */
     private Endpoint createEndpointWithName(OMElement epConfig, boolean anonymousEndpoint,
                                             Properties properties) {
-        
+
         Endpoint ep = createEndpoint(epConfig, anonymousEndpoint, properties);
+
+        if (ep instanceof IndirectEndpoint) {
+            String endpointId = StatisticIdentityGenerator.getIdReferencingComponent(((IndirectEndpoint) ep).getKey(),
+                                                                       ComponentType.ENDPOINT);
+            StatisticIdentityGenerator.reportingEndEvent(endpointId);
+        } else {
+            StatisticIdentityGenerator.getIdReferencingComponent(((AbstractEndpoint) ep).getReportingName(),ComponentType.ENDPOINT);
+        }
         OMElement descriptionElem = epConfig.getFirstChildWithName(DESCRIPTION_Q);
         if (descriptionElem != null) {
             ep.setDescription(descriptionElem.getText());

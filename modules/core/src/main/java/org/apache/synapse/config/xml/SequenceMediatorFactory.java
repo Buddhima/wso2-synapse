@@ -24,6 +24,8 @@ import org.apache.axiom.om.OMElement;
 import org.apache.synapse.Mediator;
 import org.apache.synapse.SequenceType;
 import org.apache.synapse.SynapseException;
+import org.apache.synapse.aspects.flow.statistics.StatisticIdentityGenerator;
+import org.apache.synapse.aspects.flow.statistics.util.StatisticDataCollectionHelper;
 import org.apache.synapse.mediators.Value;
 import org.apache.synapse.mediators.base.SequenceMediator;
 
@@ -78,14 +80,19 @@ public class SequenceMediatorFactory extends AbstractListMediatorFactory {
 
         OMAttribute n = elem.getAttribute(ATT_NAME);
         OMAttribute e = elem.getAttribute(ATT_ONERROR);
+
         if (n != null) {
+
             seqMediator.setName(n.getAttributeValue());
+            StatisticIdentityGenerator.resetId();
+            StatisticIdentityGenerator.setParent(seqMediator.getName());
             if (e != null) {
                 seqMediator.setErrorHandler(e.getAttributeValue());
             }
             processAuditStatus(seqMediator, elem);
             addChildren(elem, seqMediator, properties);
 
+            StatisticIdentityGenerator.resetId();
         } else {
             n = elem.getAttribute(ATT_KEY);
             if (n != null) {

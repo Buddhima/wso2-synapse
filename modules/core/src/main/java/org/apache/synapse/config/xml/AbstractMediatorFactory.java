@@ -31,6 +31,9 @@ import org.apache.synapse.SynapseConstants;
 import org.apache.synapse.SynapseException;
 import org.apache.synapse.aspects.AspectConfigurable;
 import org.apache.synapse.aspects.AspectConfiguration;
+import org.apache.synapse.aspects.ComponentType;
+import org.apache.synapse.aspects.flow.statistics.StatisticIdentityGenerator;
+import org.apache.synapse.mediators.base.SequenceMediator;
 
 import javax.xml.namespace.QName;
 import java.util.Iterator;
@@ -91,6 +94,7 @@ public abstract class AbstractMediatorFactory implements MediatorFactory {
      * @return built mediator using the above element
      */
     public final Mediator createMediator(OMElement elem, Properties properties) {
+
         Mediator mediator = createSpecificMediator(elem, properties);
         OMElement descElem = elem.getFirstChildWithName(DESCRIPTION_Q);
         if (descElem != null) {
@@ -99,6 +103,10 @@ public abstract class AbstractMediatorFactory implements MediatorFactory {
         OMAttribute attDescription = elem.getAttribute(ATT_DESCRIPTION);
         if (attDescription != null) {
             mediator.setShortDescription(attDescription.getAttributeValue());
+        }
+        if (mediator instanceof AspectConfigurable) {
+            StatisticIdentityGenerator
+                    .reportingEndEvent(((AspectConfigurable) mediator).getAspectConfiguration().getUniqueId());
         }
         return mediator;
     }
@@ -145,9 +153,26 @@ public abstract class AbstractMediatorFactory implements MediatorFactory {
             name = SynapseConstants.ANONYMOUS_SEQUENCE;
         }
 
+
+
         if (mediator instanceof AspectConfigurable) {
             AspectConfiguration configuration = new AspectConfiguration(name);
             ((AspectConfigurable) mediator).configure(configuration);
+            String mediatorId = null;
+            if (mediator instanceof SequenceMediator) {
+                if (((Nameable) mediator).getName() != null) {
+                    mediatorId = StatisticIdentityGenerator.getIdForComponent(((Nameable) mediator).getName(),
+                                                                              ComponentType.SEQUENCE);
+                }
+            } else {
+                mediatorId =StatisticIdentityGenerator.getIdForComponent(mediator.getMediatorName(), ComponentType
+                        .MEDIATOR);
+            }
+
+            if(mediatorId != null){
+                configuration.setUniqueId(mediatorId);
+            }
+
 
             OMAttribute statistics = mediatorOmElement.getAttribute(ATT_STATS);
             if (statistics != null) {

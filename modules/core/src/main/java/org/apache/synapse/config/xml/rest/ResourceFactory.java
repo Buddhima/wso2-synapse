@@ -25,6 +25,9 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.SequenceType;
 import org.apache.synapse.SynapseException;
+import org.apache.synapse.aspects.ComponentType;
+import org.apache.synapse.aspects.flow.statistics.StatisticIdentityGenerator;
+import org.apache.synapse.aspects.flow.statistics.util.StatisticDataCollectionHelper;
 import org.apache.synapse.config.xml.SequenceMediatorFactory;
 import org.apache.synapse.config.xml.XMLConfigConstants;
 import org.apache.synapse.mediators.base.SequenceMediator;
@@ -97,6 +100,7 @@ public class ResourceFactory {
     }
 
     private static void configureSequences(Resource resource, OMElement resourceElt, Properties properties) {
+        StatisticIdentityGenerator.getIdForComponent("", ComponentType.RESOURCE);
         OMAttribute inSequenceKeyAtt = resourceElt.getAttribute(new QName("inSequence"));
         OMElement inSequenceElt = resourceElt.getFirstChildWithName(new QName(
                 XMLConfigConstants.SYNAPSE_NAMESPACE, "inSequence"));
@@ -104,8 +108,10 @@ public class ResourceFactory {
             resource.setInSequenceKey(inSequenceKeyAtt.getAttributeValue());
         } else if (inSequenceElt != null) {
             SequenceMediatorFactory fac = new SequenceMediatorFactory();
+            StatisticIdentityGenerator.getIdForComponent(SequenceType.API_INSEQ.toString(),ComponentType.SEQUENCE);
             SequenceMediator sequence = fac.createAnonymousSequence(inSequenceElt, properties);
             sequence.setSequenceType(SequenceType.API_INSEQ);
+
             resource.setInSequence(sequence);
         }
 
@@ -116,8 +122,10 @@ public class ResourceFactory {
             resource.setOutSequenceKey(outSequenceKeyAtt.getAttributeValue());
         } else if (outSequenceElt != null) {
             SequenceMediatorFactory fac = new SequenceMediatorFactory();
+            StatisticIdentityGenerator.getIdForComponent(SequenceType.API_OUTSEQ.toString(),ComponentType.SEQUENCE);
             SequenceMediator sequence = fac.createAnonymousSequence(outSequenceElt, properties);
             sequence.setSequenceType(SequenceType.API_OUTSEQ);
+
             resource.setOutSequence(sequence);
         }
 
@@ -128,8 +136,10 @@ public class ResourceFactory {
             resource.setFaultSequenceKey(faultSequenceKeyAtt.getAttributeValue());
         } else if (faultSequenceElt != null) {
             SequenceMediatorFactory fac = new SequenceMediatorFactory();
+            StatisticIdentityGenerator.getIdForComponent(SequenceType.API_FAULTSEQ.toString(),ComponentType.SEQUENCE);
             SequenceMediator sequence = fac.createAnonymousSequence(faultSequenceElt, properties);
             sequence.setSequenceType(SequenceType.API_FAULTSEQ);
+
             resource.setFaultSequence(sequence);
         }
     }

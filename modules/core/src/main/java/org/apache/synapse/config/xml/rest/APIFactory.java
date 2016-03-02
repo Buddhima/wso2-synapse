@@ -27,6 +27,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.synapse.SynapseConstants;
 import org.apache.synapse.SynapseException;
 import org.apache.synapse.aspects.AspectConfiguration;
+import org.apache.synapse.aspects.ComponentType;
+import org.apache.synapse.aspects.flow.statistics.StatisticIdentityGenerator;
 import org.apache.synapse.commons.util.PropertyHelper;
 import org.apache.synapse.config.xml.XMLConfigConstants;
 import org.apache.synapse.rest.API;
@@ -65,6 +67,9 @@ public class APIFactory {
         }
 
         API api = new API(nameAtt.getAttributeValue(), contextAtt.getAttributeValue());
+        StatisticIdentityGenerator.resetId();
+        StatisticIdentityGenerator.setParent(api.getName());
+        StatisticIdentityGenerator.getIdForComponent(api.getName(), ComponentType.API);
 
         OMAttribute hostAtt = apiElt.getAttribute(new QName("hostname"));
         if (hostAtt != null && !"".equals(hostAtt.getAttributeValue())) {
