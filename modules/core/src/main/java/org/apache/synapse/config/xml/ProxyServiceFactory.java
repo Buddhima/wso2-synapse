@@ -29,6 +29,8 @@ import org.apache.synapse.SequenceType;
 import org.apache.synapse.SynapseConstants;
 import org.apache.synapse.SynapseException;
 import org.apache.synapse.aspects.AspectConfiguration;
+import org.apache.synapse.aspects.ComponentType;
+import org.apache.synapse.aspects.flow.statistics.StatisticIdentityGenerator;
 import org.apache.synapse.config.xml.endpoints.EndpointFactory;
 import org.apache.synapse.core.axis2.ProxyService;
 import org.apache.synapse.mediators.base.SequenceMediator;
@@ -85,6 +87,7 @@ public class ProxyServiceFactory {
         } else {
             proxy = new ProxyService(name.getAttributeValue());
         }
+
 
         OMAttribute trans = elem.getAttribute(
                 new QName(XMLConfigConstants.NULL_NAMESPACE, "transports"));
@@ -145,6 +148,18 @@ public class ProxyServiceFactory {
             proxy.setDescription(descriptionElement.getText().trim());
         }
 
+        String nameString = proxy.getName();
+        if (nameString == null || "".equals(nameString)) {
+            nameString = SynapseConstants.ANONYMOUS_PROXYSERVICE;
+        }
+        AspectConfiguration aspectConfiguration = new AspectConfiguration(nameString);
+        proxy.configure(aspectConfiguration);
+
+        StatisticIdentityGenerator.resetId();
+        StatisticIdentityGenerator.setParent(proxy.getName());
+        String proxyId = StatisticIdentityGenerator.getIdForComponent(proxy.getName(), ComponentType.PROXYSERVICE);
+        aspectConfiguration.setUniqueId(proxyId);
+
         // read definition of the target of this proxy service. The target could be an 'endpoint'
         // or a named sequence. If none of these are specified, the messages would be mediated
         // by the Synapse main mediator
@@ -162,39 +177,17 @@ public class ProxyServiceFactory {
                 OMElement inSequenceElement = target.getFirstChildWithName(
                         new QName(XMLConfigConstants.SYNAPSE_NAMESPACE, "inSequence"));
                 if (inSequenceElement != null) {
+                    String inSeqId = StatisticIdentityGenerator
+                            .getIdForComponent(SequenceType.PROXY_INSEQ.toString(), ComponentType.SEQUENCE);
                     SequenceMediator inSequenceMediator =
                             mediatorFactory.createAnonymousSequence(inSequenceElement, properties);
                     inSequenceMediator.setSequenceType(SequenceType.PROXY_INSEQ);
+                    inSequenceMediator.getAspectConfiguration().setUniqueId(inSeqId);
+                    StatisticIdentityGenerator.reportingEndEvent(inSeqId);
+
+
                     proxy.setTargetInLineInSequence(inSequenceMediator);
                     isTargetOk = true;
-                }
-            }
-            OMAttribute outSequence = target.getAttribute(
-                    new QName(XMLConfigConstants.NULL_NAMESPACE, "outSequence"));
-            if (outSequence != null) {
-                proxy.setTargetOutSequence(outSequence.getAttributeValue());
-            } else {
-                OMElement outSequenceElement = target.getFirstChildWithName(
-                        new QName(XMLConfigConstants.SYNAPSE_NAMESPACE, "outSequence"));
-                if (outSequenceElement != null) {
-                    SequenceMediator outSequenceMediator =
-                            mediatorFactory.createAnonymousSequence(outSequenceElement, properties);
-                    outSequenceMediator.setSequenceType(SequenceType.PROXY_OUTSEQ);
-                    proxy.setTargetInLineOutSequence(outSequenceMediator);
-                }
-            }
-            OMAttribute faultSequence = target.getAttribute(
-                    new QName(XMLConfigConstants.NULL_NAMESPACE, "faultSequence"));
-            if (faultSequence != null) {
-                proxy.setTargetFaultSequence(faultSequence.getAttributeValue());
-            } else {
-                OMElement faultSequenceElement = target.getFirstChildWithName(
-                        new QName(XMLConfigConstants.SYNAPSE_NAMESPACE, "faultSequence"));
-                if (faultSequenceElement != null) {
-                    SequenceMediator faultSequenceMediator =
-                            mediatorFactory.createAnonymousSequence(faultSequenceElement, properties);
-                    faultSequenceMediator.setSequenceType(SequenceType.PROXY_FAULTSEQ);
-                    proxy.setTargetInLineFaultSequence(faultSequenceMediator);
                 }
             }
             OMAttribute tgtEndpt = target.getAttribute(
@@ -211,6 +204,45 @@ public class ProxyServiceFactory {
                     isTargetOk = true;
                 }
             }
+            OMAttribute outSequence = target.getAttribute(
+                    new QName(XMLConfigConstants.NULL_NAMESPACE, "outSequence"));
+            if (outSequence != null) {
+                proxy.setTargetOutSequence(outSequence.getAttributeValue());
+            } else {
+                OMElement outSequenceElement = target.getFirstChildWithName(
+                        new QName(XMLConfigConstants.SYNAPSE_NAMESPACE, "outSequence"));
+                if (outSequenceElement != null) {
+                    String outSeqId =StatisticIdentityGenerator
+                            .getIdForComponent(SequenceType.PROXY_OUTSEQ.toString(), ComponentType.SEQUENCE);
+                    SequenceMediator outSequenceMediator =
+                            mediatorFactory.createAnonymousSequence(outSequenceElement, properties);
+                    outSequenceMediator.setSequenceType(SequenceType.PROXY_OUTSEQ);
+                    outSequenceMediator.getAspectConfiguration().setUniqueId(outSeqId);
+                    StatisticIdentityGenerator.reportingEndEvent(outSeqId);
+
+                    proxy.setTargetInLineOutSequence(outSequenceMediator);
+                }
+            }
+            OMAttribute faultSequence = target.getAttribute(
+                    new QName(XMLConfigConstants.NULL_NAMESPACE, "faultSequence"));
+            if (faultSequence != null) {
+                proxy.setTargetFaultSequence(faultSequence.getAttributeValue());
+            } else {
+                OMElement faultSequenceElement = target.getFirstChildWithName(
+                        new QName(XMLConfigConstants.SYNAPSE_NAMESPACE, "faultSequence"));
+                if (faultSequenceElement != null) {
+                    String faultSeqId =StatisticIdentityGenerator
+                            .getIdForComponent(SequenceType.PROXY_FAULTSEQ.toString(), ComponentType.SEQUENCE);
+                    SequenceMediator faultSequenceMediator =
+                            mediatorFactory.createAnonymousSequence(faultSequenceElement, properties);
+                    faultSequenceMediator.setSequenceType(SequenceType.PROXY_FAULTSEQ);
+                    faultSequenceMediator.getAspectConfiguration().setUniqueId(faultSeqId);
+                    StatisticIdentityGenerator.reportingEndEvent(faultSeqId);
+
+                    proxy.setTargetInLineFaultSequence(faultSequenceMediator);
+                }
+            }
+
             if(!isTargetOk) {
                 handleException("Target of the proxy service must declare " +
                         "either an inSequence or endpoint or both");
@@ -308,12 +340,7 @@ public class ProxyServiceFactory {
             }
         }
 
-        String nameString = proxy.getName();
-        if (nameString == null || "".equals(nameString)) {
-            nameString = SynapseConstants.ANONYMOUS_PROXYSERVICE;
-        }
-        AspectConfiguration aspectConfiguration = new AspectConfiguration(nameString);
-        proxy.configure(aspectConfiguration);
+
 
         OMAttribute statistics = elem.getAttribute(new QName(XMLConfigConstants.NULL_NAMESPACE,
                 XMLConfigConstants.STATISTICS_ATTRIB_NAME));
@@ -369,6 +396,8 @@ public class ProxyServiceFactory {
                 new QName(XMLConfigConstants.SYNAPSE_NAMESPACE, "enableSec")) != null) {
             proxy.setWsSecEnabled(true);
         }
+        StatisticIdentityGenerator.reportingEndEvent(proxyId);
+        StatisticIdentityGenerator.resetId();
 
         return proxy;
     }
