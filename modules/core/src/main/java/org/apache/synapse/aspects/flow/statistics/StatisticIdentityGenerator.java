@@ -19,49 +19,124 @@
 package org.apache.synapse.aspects.flow.statistics;
 
 import org.apache.synapse.aspects.ComponentType;
+import org.apache.synapse.aspects.flow.statistics.structuring.StructuringElement;
+
+import java.util.ArrayList;
+import java.util.Stack;
 
 public class StatisticIdentityGenerator {
 
-	private static int id = 0;
+    private static int id = 0;
 
-	private static int hashCode = 0;
+    private static int hashCode = 0;
 
-	private static String parent;
+    private static String parent;
 
-	public static String getIdString() {
-		return String.valueOf(id++);
-	}
+    private static ArrayList<StructuringElement> list = new ArrayList<>();
 
-	public static void resetId() {
-		System.out.println(">>>>>>>HASHCODE for: " + hashCode);
-		id = 0;
-		hashCode = 0;
-	}
+    private static Stack<StructuringElement> stack = new Stack<>();
 
-	public static void setParent(String parentName) {
-		parent = parentName + "@";
-	}
+    private static String lastParent;
 
-	public static String getIdForComponent(String name, ComponentType componentType) {
-		String id = parent + getIdString() + ":" + name;
-		hashCode += id.hashCode();
-		System.out.println(id);
-		return id;
-	}
+//	private boolean branching = false;
 
-	public static String getIdReferencingComponent(String name, ComponentType componentType) {
-		String idString = name + "@0:" + name;
-		id++;
-		hashCode += idString.hashCode();
-		System.out.println(idString);
-		return idString;
-	}
+    public static String getIdString() {
+        return String.valueOf(id++);
+    }
 
-	public static void reportingBranchingEvents() {
-		System.out.println("Branching Happening, IF~else // Clone Targets");
-	}
+    public static void resetId() {
+        System.out.println(">>>>>>>HASHCODE for: " + hashCode);
+        id = 0;
+        hashCode = 0;
+        stack.clear();
+        list.clear();
+        lastParent = null;
+    }
 
-	public static void reportingEndEvent(String id) {
-		System.out.println("Ending Component Initialization:" + id);
-	}
+    public static void setParent(String parentName) {
+        parent = parentName + "@";
+    }
+
+    public static String getIdForComponent(String name, ComponentType componentType) {
+        String id = parent + getIdString() + ":" + name;
+        hashCode += id.hashCode();
+        System.out.println(id);
+        process(name, componentType);
+        return id;
+    }
+
+    public static String getIdReferencingComponent(String name, ComponentType componentType) {
+        String idString = name + "@0:" + name;
+        id++;
+        hashCode += idString.hashCode();
+        System.out.println(idString);
+        process(name, componentType);
+        return idString;
+    }
+
+    public static void reportingBranchingEvents() {
+        System.out.println("Branching Happening, IF~else // Clone Targets");
+
+        lastParent = stack.peek().getId();
+    }
+
+    public static void reportingEndEvent(String name) {
+        System.out.println("Ending Component Initialization:" + name);
+
+        // If the mediator is also a clone/switch/filter/iterate - Reset lastParent value
+        if (name.contains("CloneMediator")) {
+            lastParent = stack.peek().getId();
+            stack.pop();
+        }
+
+        // If event is a SEQ or Proxy - pop from stack, then update parent
+        if (name.contains("SEQ") || name.contains("Proxy") || name.contains("InMediator") || name.contains("OutMediator")) {
+            stack.pop();
+            lastParent = stack.peek().getId();
+        }
+
+    }
+
+    private static void process(String name, ComponentType componentType) {
+        if (ComponentType.PROXYSERVICE == componentType) {
+            StructuringElement proxyElem = new StructuringElement(name, componentType);
+
+            stack.push(proxyElem);
+            list.add(proxyElem);
+            lastParent = name;
+        }
+
+        if (ComponentType.SEQUENCE == componentType) {
+            StructuringElement seqElem = new StructuringElement(name, componentType);
+
+            if (stack.isEmpty()) {
+                // This is directly deploying a sequence
+                stack.push(seqElem);
+                list.add(seqElem);
+            } else {
+                // There's a parent for sequence
+                seqElem.setParentId(lastParent);
+                stack.push(seqElem);
+                list.add(seqElem);
+            }
+            lastParent = name;
+        }
+
+        if (ComponentType.MEDIATOR == componentType) {
+            StructuringElement medElem = new StructuringElement(name, componentType);
+            medElem.setParentId(lastParent);
+            if (stack.isEmpty()) {
+                // This is not a desired situation! Mediators always lies inside a sequence
+            }
+            list.add(medElem);
+            lastParent = name;
+
+            // If the mediator is also a clone/switch/filter/iterate - add that to stack
+            if (name.contains("CloneMediator") || name.contains("InMediator") || name.contains("OutMediator")) {
+                stack.push(medElem);
+
+            }
+        }
+
+    }
 }
