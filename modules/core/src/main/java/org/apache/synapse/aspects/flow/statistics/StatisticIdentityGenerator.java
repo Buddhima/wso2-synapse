@@ -38,7 +38,7 @@ public class StatisticIdentityGenerator {
 
     private static String lastParent;
 
-//	private boolean branching = false;
+	private static boolean branching = false;
 
     public static String getIdString() {
         return String.valueOf(id++);
@@ -58,11 +58,11 @@ public class StatisticIdentityGenerator {
     }
 
     public static String getIdForComponent(String name, ComponentType componentType) {
-        String id = parent + getIdString() + ":" + name;
-        hashCode += id.hashCode();
-        System.out.println(id);
-        process(name, componentType);
-        return id;
+        String idString = parent + getIdString() + ":" + name;
+        hashCode += idString.hashCode();
+        System.out.println(idString);
+        process(idString, componentType);
+        return idString;
     }
 
     public static String getIdReferencingComponent(String name, ComponentType componentType) {
@@ -70,7 +70,7 @@ public class StatisticIdentityGenerator {
         id++;
         hashCode += idString.hashCode();
         System.out.println(idString);
-        process(name, componentType);
+        process(idString, componentType);
         return idString;
     }
 
@@ -78,28 +78,32 @@ public class StatisticIdentityGenerator {
         System.out.println("Branching Happening, IF~else // Clone Targets");
 
         lastParent = stack.peek().getId();
+        branching = true;
     }
 
-    public static void reportingEndEvent(String name) {
+    public static void reportingEndEvent(String name, ComponentType componentType) {
         System.out.println("Ending Component Initialization:" + name);
 
         // If the mediator is also a clone/switch/filter/iterate - Reset lastParent value
-        if (name.contains("CloneMediator")) {
+        if (name.contains("CloneMediator") || name.contains("SwitchMediator") || name.contains("FilterMediator") || name.contains("IterateMediator")) {
             lastParent = stack.peek().getId();
             stack.pop();
+
+            branching = false;
         }
 
         // If event is a SEQ or Proxy - pop from stack, then update parent
-        if (name.contains("SEQ") || name.contains("Proxy") || name.contains("InMediator") || name.contains("OutMediator")) {
+        if (ComponentType.SEQUENCE == componentType || ComponentType.PROXYSERVICE == componentType || name.contains("InMediator") || name.contains("OutMediator")) {
             stack.pop();
-            lastParent = stack.peek().getId();
+            if (!stack.isEmpty()) {
+                lastParent = stack.peek().getId();
+            }
         }
-
     }
 
     private static void process(String name, ComponentType componentType) {
         if (ComponentType.PROXYSERVICE == componentType) {
-            StructuringElement proxyElem = new StructuringElement(name, componentType);
+            StructuringElement proxyElem = new StructuringElement(name, componentType, false);
 
             stack.push(proxyElem);
             list.add(proxyElem);
@@ -107,7 +111,7 @@ public class StatisticIdentityGenerator {
         }
 
         if (ComponentType.SEQUENCE == componentType) {
-            StructuringElement seqElem = new StructuringElement(name, componentType);
+            StructuringElement seqElem = new StructuringElement(name, componentType, false);
 
             if (stack.isEmpty()) {
                 // This is directly deploying a sequence
@@ -123,7 +127,7 @@ public class StatisticIdentityGenerator {
         }
 
         if (ComponentType.MEDIATOR == componentType) {
-            StructuringElement medElem = new StructuringElement(name, componentType);
+            StructuringElement medElem = new StructuringElement(name, componentType, branching);
             medElem.setParentId(lastParent);
             if (stack.isEmpty()) {
                 // This is not a desired situation! Mediators always lies inside a sequence
@@ -132,7 +136,7 @@ public class StatisticIdentityGenerator {
             lastParent = name;
 
             // If the mediator is also a clone/switch/filter/iterate - add that to stack
-            if (name.contains("CloneMediator") || name.contains("InMediator") || name.contains("OutMediator")) {
+            if (name.contains("CloneMediator") || name.contains("SwitchMediator") || name.contains("FilterMediator") || name.contains("IterateMediator") || name.contains("InMediator") || name.contains("OutMediator")) {
                 stack.push(medElem);
 
             }

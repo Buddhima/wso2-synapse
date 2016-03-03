@@ -19,26 +19,19 @@ package org.apache.synapse.aspects.flow.statistics.structuring;
 
 import org.apache.synapse.aspects.ComponentType;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class StructuringElement {
-//    private String name;
     private String id;
     private ComponentType type;
 
     private String parentId;
 
-    List<StructuringElement> children;
+    private boolean mediatorBranching;
 
-    public StructuringElement(String id, ComponentType type) {
-        children = new ArrayList<StructuringElement>();
+
+    public StructuringElement(String id, ComponentType type, boolean mediatorBranching) {
         this.id = id;
         this.type = type;
-    }
-
-    public boolean addChild(StructuringElement element) {
-        return children.add(element);
+        this.mediatorBranching = mediatorBranching;
     }
 
     public String getId() {

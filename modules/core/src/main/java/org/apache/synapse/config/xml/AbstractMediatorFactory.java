@@ -106,7 +106,7 @@ public abstract class AbstractMediatorFactory implements MediatorFactory {
         }
         if (mediator instanceof AspectConfigurable) {
             StatisticIdentityGenerator
-                    .reportingEndEvent(((AspectConfigurable) mediator).getAspectConfiguration().getUniqueId());
+                    .reportingEndEvent(((AspectConfigurable) mediator).getAspectConfiguration().getUniqueId(),ComponentType.MEDIATOR);
         }
         return mediator;
     }
