@@ -61,7 +61,7 @@ public class StatisticIdentityGenerator {
 		System.out.println("Branching Happening, IF~else // Clone Targets");
 	}
 
-	public static void reportingEndEvent(String id) {
+	public static void reportingEndEvent(String id, ComponentType componentType) {
 		System.out.println("Ending Component Initialization:" + id);
 	}
 }

@@ -183,7 +183,7 @@ public class ProxyServiceFactory {
                             mediatorFactory.createAnonymousSequence(inSequenceElement, properties);
                     inSequenceMediator.setSequenceType(SequenceType.PROXY_INSEQ);
                     inSequenceMediator.getAspectConfiguration().setUniqueId(inSeqId);
-                    StatisticIdentityGenerator.reportingEndEvent(inSeqId);
+                    StatisticIdentityGenerator.reportingEndEvent(inSeqId,ComponentType.SEQUENCE);
 
 
                     proxy.setTargetInLineInSequence(inSequenceMediator);
@@ -218,7 +218,7 @@ public class ProxyServiceFactory {
                             mediatorFactory.createAnonymousSequence(outSequenceElement, properties);
                     outSequenceMediator.setSequenceType(SequenceType.PROXY_OUTSEQ);
                     outSequenceMediator.getAspectConfiguration().setUniqueId(outSeqId);
-                    StatisticIdentityGenerator.reportingEndEvent(outSeqId);
+                    StatisticIdentityGenerator.reportingEndEvent(outSeqId,ComponentType.SEQUENCE);
 
                     proxy.setTargetInLineOutSequence(outSequenceMediator);
                 }
@@ -237,7 +237,7 @@ public class ProxyServiceFactory {
                             mediatorFactory.createAnonymousSequence(faultSequenceElement, properties);
                     faultSequenceMediator.setSequenceType(SequenceType.PROXY_FAULTSEQ);
                     faultSequenceMediator.getAspectConfiguration().setUniqueId(faultSeqId);
-                    StatisticIdentityGenerator.reportingEndEvent(faultSeqId);
+                    StatisticIdentityGenerator.reportingEndEvent(faultSeqId,ComponentType.SEQUENCE);
 
                     proxy.setTargetInLineFaultSequence(faultSequenceMediator);
                 }
@@ -396,7 +396,7 @@ public class ProxyServiceFactory {
                 new QName(XMLConfigConstants.SYNAPSE_NAMESPACE, "enableSec")) != null) {
             proxy.setWsSecEnabled(true);
         }
-        StatisticIdentityGenerator.reportingEndEvent(proxyId);
+        StatisticIdentityGenerator.reportingEndEvent(proxyId,ComponentType.SEQUENCE);
         StatisticIdentityGenerator.resetId();
 
         return proxy;

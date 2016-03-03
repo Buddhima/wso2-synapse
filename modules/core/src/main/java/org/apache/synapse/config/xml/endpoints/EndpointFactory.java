@@ -147,7 +147,7 @@ public abstract class EndpointFactory implements XMLToObjectMapper {
         if (ep instanceof IndirectEndpoint) {
             String endpointId = StatisticIdentityGenerator.getIdReferencingComponent(((IndirectEndpoint) ep).getKey(),
                                                                        ComponentType.ENDPOINT);
-            StatisticIdentityGenerator.reportingEndEvent(endpointId);
+            StatisticIdentityGenerator.reportingEndEvent(endpointId,ComponentType.ENDPOINT);
         } else {
             StatisticIdentityGenerator.getIdReferencingComponent(((AbstractEndpoint) ep).getReportingName(),ComponentType.ENDPOINT);
         }
